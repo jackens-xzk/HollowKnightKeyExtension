@@ -9,270 +9,13 @@ HHOOK myhook;
 LPCSTR infoText;
 char hollowText[256] = { 0 };
 
-bool CheckWindowName = true;
-
-
-
-bool NewMoveState = true;
-enum MoveState {
-	Left,
-	Idle,
-	Right
-}MoveState;
-
-bool ADFirst = true;
-
 const int delayTime = 15;
-
-bool UpFirstPress = true;
-bool HorizontalFirstPress = true;
-bool DownFirstPress = true;
-
-bool UpMagicFirstPress = true;
-bool HorizontalMagicFirstPress = true;
-bool DownMagicFirstPress = true;
-
-void DoKeyboard() {
-
-#pragma region 判断程序是否为Hollow Knight
-	////判断程序是否为knight;(自己想出来的,也不确定这方法是否高效)
-	//拿到当前操作窗口的句柄
-	if (CheckWindowName) {
-		HWND hwnd = ::GetActiveWindow();//当前活动窗口  ::为全局符号
-		if (hwnd == nullptr) {
-			//没有当前活动窗口
-			hwnd = ::GetForegroundWindow();//最前面的窗口
-			if (hwnd == nullptr)return; //无顶层窗口 无窗口 不作处理
-		}
-		//从句柄拿到标题
-		char windowTextBuff[256] = { 0 };
-		GetWindowTextA(hwnd, windowTextBuff, 255);
-		//比较
-		if (strcmp(windowTextBuff, hollowText) != 0)return;
-	}
-#pragma endregion
-
-#pragma region 移动部分
-	if (KeyDown('A') && KeyUp('D')) {
-		//if (MoveState != Left) {
-		MoveState = Left;
-		//NewMoveState = true;
-		ADFirst = true;
-		keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
-		keybd_event(VK_LEFT, 0, 0, 0);
-		//}
-	}
-	if (KeyDown('D') && KeyUp('A')) {
-		//if (MoveState != Right) {
-		MoveState = Right;
-		//NewMoveState = true;
-		ADFirst = true;
-		keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
-		keybd_event(VK_RIGHT, 0, 0, 0);
-		//}
-	}
-	if (KeyDown('A') && KeyDown('D')) {
-		if (ADFirst) {
-			MoveState = MoveState == Left ? Right : Left;
-			//NewMoveState = true;
-			if (MoveState == Left) {
-				keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_LEFT, 0, 0, 0);
-			}
-			else {
-				keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
-				keybd_event(VK_RIGHT, 0, 0, 0);
-			}
-			ADFirst = false;
-		}
-	}
-	if (KeyUp('A') && KeyUp('D')) {
-		if (MoveState != Idle) {
-			MoveState = Idle;
-			//NewMoveState = true;
-			ADFirst = true;
-			keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
-			keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
-		}
-	}
-#pragma endregion
-
-#pragma region 攻击部分
-
-	//劈砍
-	//上劈
-	if (KeyDown(VK_NUMPAD7)) {
-		if (UpFirstPress) {
-			keybd_event(VK_UP, 0, 0, 0);
-			UpFirstPress = false;
-		}
-		keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
-		Sleep(1);
-		keybd_event('X', 0, 0, 0);
-	}
-	else
-	{
-		if (UpFirstPress == false) {
-			keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
-			keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
-			UpFirstPress = true;
-		}
-	}
-	//横批
-	if (KeyDown(VK_NUMPAD4)) {
-		HorizontalFirstPress = true;
-		keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
-		Sleep(1);
-		keybd_event('X', 0, 0, 0);
-	}
-	else {
-		if (HorizontalFirstPress) {
-			HorizontalFirstPress = false;
-			keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
-		}
-	}
-	//下劈
-	if (KeyDown(VK_NUMPAD0)) {
-		if (DownFirstPress) {
-			keybd_event(VK_DOWN, 0, 0, 0);
-			DownFirstPress = false;
-		}
-		keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
-		Sleep(1);
-		keybd_event('X', 0, 0, 0);
-	}
-	else
-	{
-		if (DownFirstPress == false) {
-			keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
-			keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
-			DownFirstPress = true;
-		}
-	}
-
-	//if (KeyDown(VK_NUMPAD0)) {//这样也无法避免下冲
-	//	keybd_event(VK_DOWN, 0, 0, 0);
-	//	keybd_event('X', 0, 0, 0);
-	//	keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
-	//	keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
-	//}
-
-
-
-	//蓄力平砍
-	if (KeyDown(VK_NUMPAD1)) {
-		keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
-		Sleep(1);
-		keybd_event('X', 0, 0, 0);
-	}
-
-	////默认攻击
-	//if (KeyDown(VK_NUMPAD1)) {
-	//	keybd_event('X', 0, 0, 0);
-	//}
-	//else {
-	//	keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
-	//}
-
-    // 8上吼
-    if(KeyDown(VK_NUMPAD8)){
-        if(UpMagicFirstPress){
-            keybd_event(VK_UP, 0, 0, 0);
-            UpMagicFirstPress = false;
-        }
-        keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
-        Sleep(1);
-        keybd_event('U', 0, 0, 0);
-    }else{
-        if(UpMagicFirstPress == false){
-            keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
-        	keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
-            UpMagicFirstPress = true;
-        }
-    }
-    // 5 横向魔法
-	if (KeyDown(VK_NUMPAD5)) {
-		HorizontalMagicFirstPress = true;
-		keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
-		Sleep(1);
-		keybd_event('U', 0, 0, 0);
-	}
-	else {
-		if (HorizontalMagicFirstPress) {
-			HorizontalMagicFirstPress = false;
-			keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
-		}
-	}
-	// 2下砸
-    if (KeyDown(VK_NUMPAD2)) {
-        if (DownMagicFirstPress) {
-            keybd_event(VK_DOWN, 0, 0, 0);
-            DownMagicFirstPress = false;
-        }
-        keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
-        Sleep(1);
-        keybd_event('U', 0, 0, 0);
-    }
-    else
-    {
-        if (DownMagicFirstPress == false) {
-            keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
-            keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
-            DownMagicFirstPress = true;
-        }
-    }
-
-#pragma endregion
-
-#pragma region 其他基本动作
-	//冲刺
-	if (KeyDown(VK_NUMPAD6)) {
-// 		if (KeyDown(VK_SPACE)) {//中断回血
-// 			keybd_event('A', 0, KEYEVENTF_KEYUP, 0);
-// 			Sleep(250);
-// 		}
-		keybd_event('C', 0, 0, 0);
-		keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
-	}
-	//下冲
-	if (KeyDown(VK_NUMPAD3)) {
-		keybd_event(VK_DOWN, 0, 0, 0);
-		keybd_event('C', 0, 0, 0);
-		keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
-		keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
-	}
-	//冲刺 防止下劈时下冲 但按住的下劈会中断
-// 	if (KeyDown(VK_NUMPAD9)) {
-// 		keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
-// 		keybd_event('C', 0, 0, 0);
-// 		keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
-// 	}
-
-	////超冲
-	//if (KeyDown(VK_ADD) || KeyDown(VK_RETURN)) {
-	//	keybd_event('S', 0, 0, 0);
-	//}
-	//if (KeyUp(VK_ADD) && KeyUp(VK_RETURN)) {
-	//	keybd_event('S', 0, KEYEVENTF_KEYUP, 0);
-	//}
-
-	////回复
-	//if (KeyDown(VK_SPACE)) {
-	//	keybd_event('A', 0, 0, 0);
-	//}
-	//if (KeyUp(VK_SPACE)) {
-	//	keybd_event('A', 0, KEYEVENTF_KEYUP, 0);
-	//}
-
-#pragma endregion
-
-}
 
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 #pragma region 判断程序是否为knight
-	////判断程序是否为knight;(自己想出来的,也不确定这方法是否高效)
-//拿到当前操作窗口的句柄
+	//判断程序是否为knight;(自己想出来的,也不确定这方法是否高效)
+    //拿到当前操作窗口的句柄
 	HWND hwnd = ::GetActiveWindow();//当前活动窗口  ::为全局符号
 	if (hwnd == nullptr) {
 		//没有当前活动窗口
@@ -297,30 +40,63 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		switch (p->vkCode) {
 
 		case 'W':
-			keybd_event('Z', 0, 0, 0);//跳跃
+			keybd_event('Z', 0, 0, 0); // 跳跃
 			return 1;
 			break;
 		case 'S':
-		    
 			keybd_event(VK_DOWN, 0, 0, 0);
-// 			keybd_event('X', 0, KEYEVENTF_KEYUP, 0);//秒发下剑技
-// 			keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
-// 			Sleep(1);
-// 			keybd_event('X', 0, 0, 0);
-
-            // 回血
-//             keybd_event('J', 0, 0, 0);
-
-
 			return 1;
 			break;
+        case 'A':
+            keybd_event(VK_LEFT, 0, 0, 0);
+            return 1;
+            break;
+        case 'D':
+            keybd_event(VK_RIGHT, 0, 0, 0);
+            return 1;
+            break;
 		case ' ':
-			keybd_event('J', 0, 0, 0); //专注 施法
-//             keybd_event('Z', 0, 0, 0); // 跳跃
+			keybd_event('J', 0, 0, 0); // 专注 施法
+            // keybd_event('Z', 0, 0, 0); // 跳跃
 			return 1;
-// 			return CallNextHookEx(myhook, nCode, wParam, lParam);
 			break;
 		
+		case VK_NUMPAD7:
+		    keybd_event(VK_UP, 0, 0, 0);
+		    keybd_event('X', 0, 0, 0);
+		    return 1;
+            break;
+        case VK_NUMPAD4:
+            keybd_event('X', 0, 0, 0);
+		    return 1;
+            break;
+        case VK_NUMPAD1:
+		case VK_NUMPAD0:
+		    keybd_event(VK_DOWN, 0, 0, 0);
+		    keybd_event('X', 0, 0, 0);
+		    return 1;
+            break;
+          
+        case VK_NUMPAD8:
+            keybd_event(VK_UP, 0, 0, 0);
+            keybd_event('U', 0, 0, 0);
+            return 1;
+            break;
+        case VK_NUMPAD5:
+            keybd_event('U', 0, 0, 0);
+            return 1;
+            break;
+        case VK_NUMPAD2:
+            keybd_event(VK_DOWN, 0, 0, 0);
+            keybd_event('U', 0, 0, 0);
+            return 1;
+            break;
+        
+        case VK_NUMPAD6:
+            keybd_event('C', 0, 0, 0);
+            return 1;
+            break;
+            
 		case VK_NUMPAD9://小地图
 			keybd_event(VK_TAB, 0, 0, 0);
 			return 1;
@@ -331,23 +107,6 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 			return 1;
 			break;
 
-			//case VK_NUMPAD6://冲刺   在这个部分有时候失灵 这个很烦人
-			//	if (KeyDown(VK_SPACE)) {//中断回血
-			//		keybd_event('A', 0, KEYEVENTF_KEYUP, 0);
-			//		Sleep(250);
-			//	}
-			//	keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
-			//	Sleep(1);
-			//	keybd_event('C', 0, 0, 0);
-			//	return 1;
-			//	break;
-			//case VK_NUMPAD3://下冲
-			//	keybd_event(VK_DOWN, 0, 0, 0);
-			//	keybd_event('C', 0, 0, 0);
-			//	keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
-			//	keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
-			//	return 1;
-			//	break;
 		case VK_ADD://超级冲刺
 		case VK_RETURN:
 // 		case VK_SHIFT: shift键不行
@@ -358,34 +117,15 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 			keybd_event('L', 0, 0, 0);
 			return 1;
 			break;
-// 		case VK_NUMPAD5://横向魔法
-// 			keybd_event('U', 0, 0, 0);
-// 			keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
-// 			return 1;
-// 			break;
-// 		case VK_NUMPAD8://上魔法 吼叫 尖啸
-// 			keybd_event(VK_UP, 0, 0, 0);
-// 			keybd_event('U', 0, 0, 0);
-// 			keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
-// 			keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
-// 			return 1;
-// 			break;
-// 		case VK_NUMPAD2://下魔法 下砸 俯冲
-// 			keybd_event(VK_DOWN, 0, 0, 0);
-// 			keybd_event('U', 0, 0, 0);
-// 			keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
-// 			keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
-// 			return 1;
-// 			break;
+
 		case VK_END://道具栏
 		case VK_OEM_3:
-// 		case '2':
 			keybd_event('I', 0, 0, 0);
 			keybd_event('I', 0, KEYEVENTF_KEYUP, 0);
 			return 1;
 			break;
-			//回身斩
-		case 'Q':
+			
+		case 'Q': // 回身斩
 			keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_LEFT, 0, 0, 0);
 			Sleep(delayTime);
@@ -403,8 +143,8 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 			keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
 			return 1;
 			break;
-			//回身冲刺
-		case VK_CAPITAL:
+			
+		case VK_CAPITAL: //回身冲刺
 			keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_LEFT, 0, 0, 0);
 			Sleep(delayTime);
@@ -412,6 +152,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 			keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
 			return 1;
+			break;
 		case 'F':
 			keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_RIGHT, 0, 0, 0);
@@ -420,28 +161,72 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 			keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
 			return 1;
+			break;
 		}
 	}
 	if (wParam == WM_KEYUP) { // 抬起
 		switch (p->vkCode) {
+		
 		case 'W':
 			keybd_event('Z', 0, KEYEVENTF_KEYUP, 0);
 			return 1;
 			break;
         case 'S':
-            
-//             keybd_event('X', 0, KEYEVENTF_KEYUP, 0);// 撤回剑技
             keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
-            // 回血
-//             keybd_event('J', 0, KEYEVENTF_KEYUP, 0);
+            // keybd_event('J', 0, KEYEVENTF_KEYUP, 0); // 回血
             return 1;
             break;
+        case 'A':
+            keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
+            return 1;
+            break;
+        case 'D':
+            keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
+            return 1;
+            break;
+        
 		case ' ':
-			keybd_event('J', 0, KEYEVENTF_KEYUP, 0);//专注 施法
-// 			keybd_event('Z', 0, KEYEVENTF_KEYUP, 0);
+			keybd_event('J', 0, KEYEVENTF_KEYUP, 0); //专注 施法
+            // keybd_event('Z', 0, KEYEVENTF_KEYUP, 0); // 跳跃
 			return 1;
-// 			return CallNextHookEx(myhook, nCode, wParam, lParam);
 			break;
+			
+        case VK_NUMPAD7:
+            keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
+		    return 1;
+            break;
+        case VK_NUMPAD4:
+            keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
+		    return 1;
+            break;
+        case VK_NUMPAD1:
+        case VK_NUMPAD0:
+		    keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
+		    return 1;
+            break;
+            
+        case VK_NUMPAD8:
+            keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
+            return 1;
+            break;
+        case VK_NUMPAD5:
+            keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
+            return 1;
+            break;
+        case VK_NUMPAD2:
+            keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
+            return 1;
+            break;
+            
+        case VK_NUMPAD6:
+            keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
+            return 1;
+            break;
+            
 		case VK_NUMPAD9://小地图
 			keybd_event(VK_TAB, 0, KEYEVENTF_KEYUP, 0);
 			return 1;
@@ -612,12 +397,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		MessageBox(hwnd, text, TEXT("错误"), MB_OK);
 	}
 
-
-
 	// 5. 消息循环
 	while (GetMessage(&Msg, NULL, 0, 0) > 0)
 	{
-		DoKeyboard();
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 	}
