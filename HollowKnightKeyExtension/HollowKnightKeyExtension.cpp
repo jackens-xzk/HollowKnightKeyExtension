@@ -39,93 +39,93 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 	if (wParam == WM_KEYDOWN) { // 按下
 		switch (p->vkCode) {
 
-		case 'W':
+		case 'W': // Z 跳跃
 			keybd_event('Z', 0, 0, 0); // 跳跃
 			return 1;
 			break;
-		case 'S':
+		case 'S': // 下  下看、交互 
 			keybd_event(VK_DOWN, 0, 0, 0);
 			return 1;
 			break;
-        case 'A':
+        case 'A': // 左移动
             keybd_event(VK_LEFT, 0, 0, 0);
             return 1;
             break;
-        case 'D':
+        case 'D':  // 右移动
             keybd_event(VK_RIGHT, 0, 0, 0);
             return 1;
             break;
-		case ' ':
+		case ' ':  // 聚气回血、技能施法
 			keybd_event('J', 0, 0, 0); // 专注 施法
             // keybd_event('Z', 0, 0, 0); // 跳跃
 			return 1;
 			break;
 		
-		case VK_NUMPAD7:
+		case VK_NUMPAD7: // 上劈
 		    keybd_event(VK_UP, 0, 0, 0);
 		    keybd_event('X', 0, 0, 0);
 		    return 1;
             break;
-        case VK_NUMPAD4:
+        case VK_NUMPAD4: // 横批
             keybd_event('X', 0, 0, 0);
 		    return 1;
             break;
-        case VK_NUMPAD1:
-		case VK_NUMPAD0:
+        case VK_NUMPAD1: // 下劈
+		case VK_NUMPAD0: // 下劈
 		    keybd_event(VK_DOWN, 0, 0, 0);
 		    keybd_event('X', 0, 0, 0);
 		    return 1;
             break;
           
-        case VK_NUMPAD8:
+        case VK_NUMPAD8: // 上吼
             keybd_event(VK_UP, 0, 0, 0);
             keybd_event('U', 0, 0, 0);
             return 1;
             break;
-        case VK_NUMPAD5:
+        case VK_NUMPAD5: // 横波
             keybd_event('U', 0, 0, 0);
             return 1;
             break;
-        case VK_NUMPAD2:
+        case VK_NUMPAD2: // 下砸
             keybd_event(VK_DOWN, 0, 0, 0);
             keybd_event('U', 0, 0, 0);
             return 1;
             break;
         
-        case VK_NUMPAD6:
+        case VK_NUMPAD6: // 冲刺
             keybd_event('C', 0, 0, 0);
             return 1;
             break;
             
-		case VK_NUMPAD9://小地图
+		case VK_NUMPAD9: //小地图
 			keybd_event(VK_TAB, 0, 0, 0);
 			return 1;
 			break;
 
-		case VK_DECIMAL://小地图
+		case VK_DECIMAL: //小地图
 			keybd_event(VK_TAB, 0, 0, 0);
 			return 1;
 			break;
 
-		case VK_ADD://超级冲刺
-		case VK_RETURN:
+		case VK_ADD:  //小键盘加号对应 超级冲刺
+		case VK_RETURN: //小键盘回车对应  超级冲刺
 // 		case VK_SHIFT: shift键不行
 			keybd_event('K', 0, 0, 0);
 			return 1;
 			break;
-		case VK_NEXT://梦之钉 pageDown
+		case VK_NEXT:  //pageDown 对应 梦之钉 
 			keybd_event('L', 0, 0, 0);
 			return 1;
 			break;
 
-		case VK_END://道具栏
+		case VK_END: //end对应 道具栏
 		case VK_OEM_3:
 			keybd_event('I', 0, 0, 0);
 			keybd_event('I', 0, KEYEVENTF_KEYUP, 0);
 			return 1;
 			break;
 			
-		case 'Q': // 回身斩
+		case 'Q': // 向右移动时 向左回身斩
 			keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_LEFT, 0, 0, 0);
 			Sleep(delayTime);
@@ -134,7 +134,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 			keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
 			return 1;
 			break;
-		case 'E':
+		case 'E': // 向左移动时 向右回身斩
 			keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_RIGHT, 0, 0, 0);
 			Sleep(delayTime);
@@ -144,7 +144,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 			return 1;
 			break;
 			
-		case VK_CAPITAL: //回身冲刺
+		case VK_CAPITAL: // 向右移动时 向左回身冲刺
 			keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_LEFT, 0, 0, 0);
 			Sleep(delayTime);
@@ -153,7 +153,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 			keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
 			return 1;
 			break;
-		case 'F':
+		case 'F': // 向左移动时 向右回身冲刺
 			keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
 			keybd_event(VK_RIGHT, 0, 0, 0);
 			Sleep(delayTime);
@@ -164,7 +164,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 			break;
 		}
 	}
-	if (wParam == WM_KEYUP) { // 抬起
+	if (wParam == WM_KEYUP) { // 处理按键抬起事件
 		switch (p->vkCode) {
 		
 		case 'W':
