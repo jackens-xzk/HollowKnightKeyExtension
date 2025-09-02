@@ -7,10 +7,22 @@ WCHAR hollow_knight_text[256] = L"Hollow Knight";
 constexpr int delay_time = 15;
 bool hollow_knight_game_active = false;
 DWORD last_window_check = 0;
-constexpr DWORD window_check_interval = 100; // 100ms检查一次
+constexpr DWORD window_check_interval = 200; // 前台窗口检测频率，单位ms，用于检查前台窗口是否为空洞骑士
 
-// 更新当前窗口状态的函数
-void update_window_status() {
+bool charge_mode; // 蓄力模式
+
+//按键状态记录
+bool pad7;
+bool pad4;
+bool pad0;
+bool pad8;
+bool pad5;
+bool pad2;
+bool pad6;
+bool pad3;
+
+// 前台窗口检测
+void foreground_window_check() {
     DWORD current_time = GetTickCount();
     // 避免检查过于频繁
     if (current_time - last_window_check > window_check_interval) {
@@ -27,23 +39,120 @@ void update_window_status() {
     }
 }
 
-LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPARAM l_param) {
-#pragma region 基本处理
+// 键盘按键的连续处理函数 达成持续按压转按键连发 按键优先级覆盖等功能
+void keyboard_continue_proc() {
+    // 前台窗口检测
+    foreground_window_check();
+    if (!hollow_knight_game_active) return;
 
+    if (pad7) {
+        // 上劈
+        if (charge_mode) {
+            //蓄力模式
+            keybd_event(VK_UP, 0, 0, 0);
+            keybd_event('X', 0, KEYEVENTF_KEYUP, 0); // 松开触发剑技
+            Sleep(1); // 延时供游戏检测松开剑技
+            keybd_event('X', 0, 0, 0); // 不断连发延长旋风斩时间
+            Sleep(1); // 延时供游戏检测上劈状态
+            keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
+            // keybd_event('X', 0, KEYEVENTF_KEYUP, 0); // 取消松开保持连续蓄力
+        }
+        else {
+            // 普通模式
+            keybd_event(VK_UP, 0, 0, 0);
+            keybd_event('X', 0, 0, 0);
+            Sleep(1); // 延时供游戏检测上劈状态
+            keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
+        }
+    }
+
+    if (pad4) {
+        // 横劈
+        keybd_event('X', 0, 0, 0);
+        Sleep(1);
+        keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
+    }
+
+
+    if (pad0) {
+        if (charge_mode) {
+            // 蓄力模式
+            keybd_event(VK_DOWN, 0, 0, 0);
+            keybd_event('X', 0, KEYEVENTF_KEYUP, 0); // 松开触发剑技
+            Sleep(1); // 松开触发剑技（延时供游戏检测）
+            keybd_event('X', 0, 0, 0); // 不断连发延长旋风斩时间
+            Sleep(1); // 延时供游戏检测下劈状态
+            keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
+            // keybd_event('X', 0, KEYEVENTF_KEYUP, 0); // 取消松开保持连续蓄力
+        }
+        else {
+            // 下劈
+            keybd_event(VK_DOWN, 0, 0, 0);
+            keybd_event('X', 0, 0, 0);
+            Sleep(1); // 延时供游戏检测下劈状态
+            keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
+        }
+    }
+
+    if (pad8) {
+        // 上吼
+        keybd_event(VK_UP, 0, 0, 0);
+        keybd_event('U', 0, 0, 0);
+        Sleep(1);
+        keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
+        keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
+    }
+
+    if (pad5) {
+        // 横波
+        keybd_event('U', 0, 0, 0);
+        Sleep(1);
+        keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
+    }
+
+    if (pad2) {
+        // 下砸
+        keybd_event(VK_DOWN, 0, 0, 0);
+        keybd_event('U', 0, 0, 0);
+        Sleep(1);
+        keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
+        keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
+    }
+
+    if (pad6) {
+        // 冲刺
+        keybd_event('C', 0, 0, 0);
+        Sleep(1);
+        keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
+    }
+
+    if (pad3) {
+        // 下冲
+        keybd_event(VK_DOWN, 0, 0, 0);
+        keybd_event('C', 0, 0, 0);
+        Sleep(1);
+        keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
+        keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
+    }
+}
+
+
+// 键盘钩子函数 基本按键映射 仅处理瞬时、单次的按下、抬起事件
+LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPARAM l_param) {
     // 忽略系统消息等其他事件
     if (n_code < 0) {
         return CallNextHookEx(keyboard_hook, n_code, w_param, l_param);
     }
 
-    // 更新窗口状态（但不会太频繁）
-    update_window_status();
+    // 前台窗口检测
+    foreground_window_check();
 
     // 比较窗口标题
     if (!hollow_knight_game_active) {
         return CallNextHookEx(keyboard_hook, n_code, w_param, l_param);
     }
-
-#pragma endregion
 
     // ReSharper disable once CppFunctionalStyleCast
     const auto p = PKBDLLHOOKSTRUCT(l_param); // NOLINT(performance-no-int-to-ptr)
@@ -72,36 +181,42 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
             return 1;
 
         case VK_NUMPAD7: // 上劈
-            keybd_event(VK_UP, 0, 0, 0);
-            keybd_event('X', 0, 0, 0);
+            pad7 = true;
             return 1;
 
         case VK_NUMPAD4: // 横批
-            keybd_event('X', 0, 0, 0);
+            pad4 = true;
+            charge_mode = false;
             return 1;
 
-        case VK_NUMPAD1: // 下劈
-        case VK_NUMPAD0: // 下劈
-            keybd_event(VK_DOWN, 0, 0, 0);
+        case VK_NUMPAD1: // 剑技蓄力
+            keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
+            Sleep(1);
             keybd_event('X', 0, 0, 0);
+            charge_mode = true;
+            return 1;
+        case VK_NUMPAD0: // 下劈
+            pad0 = true;
             return 1;
 
         case VK_NUMPAD8: // 上吼
-            keybd_event(VK_UP, 0, 0, 0);
-            keybd_event('U', 0, 0, 0);
+            pad8 = true;
             return 1;
 
         case VK_NUMPAD5: // 横波
-            keybd_event('U', 0, 0, 0);
+            pad5 = true;
             return 1;
 
         case VK_NUMPAD2: // 下砸
-            keybd_event(VK_DOWN, 0, 0, 0);
-            keybd_event('U', 0, 0, 0);
+            pad2 = true;
             return 1;
 
         case VK_NUMPAD6: // 冲刺
-            keybd_event('C', 0, 0, 0);
+            pad6 = true;
+            return 1;
+
+        case VK_NUMPAD3: // 下冲
+            pad3 = true;
             return 1;
 
         case VK_NUMPAD9: // 小地图
@@ -184,37 +299,38 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
             keybd_event('J', 0, KEYEVENTF_KEYUP, 0);
             return 1;
 
-        case VK_NUMPAD7:
-            keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
-            keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
+        case VK_NUMPAD7: // 上劈
+            pad7 = false;
             return 1;
 
-        case VK_NUMPAD4:
-            keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
+        case VK_NUMPAD4: // 横批
+            pad4 = false;
             return 1;
 
-        case VK_NUMPAD1:
-        case VK_NUMPAD0:
-            keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
-            keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
+        case VK_NUMPAD1: // 剑技蓄力
+            return 1;
+        case VK_NUMPAD0: // 下劈
+            pad0 = false;
             return 1;
 
-        case VK_NUMPAD8:
-            keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
-            keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
+        case VK_NUMPAD8: // 上吼
+            pad8 = false;
             return 1;
 
-        case VK_NUMPAD5:
-            keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
+        case VK_NUMPAD5: // 横波
+            pad5 = false;
             return 1;
 
-        case VK_NUMPAD2:
-            keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
-            keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
+        case VK_NUMPAD2: // 下砸
+            pad2 = false;
             return 1;
 
-        case VK_NUMPAD6:
-            keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
+        case VK_NUMPAD6: // 冲刺
+            pad6 = false;
+            return 1;
+
+        case VK_NUMPAD3: // 下冲
+            pad3 = false;
             return 1;
 
         case VK_NUMPAD9:
@@ -248,22 +364,22 @@ LRESULT CALLBACK wnd_proc(const HWND hwnd, const UINT msg, const WPARAM w_param,
     static HFONT hFont = nullptr;
     if (hFont == nullptr) {
         hFont = CreateFont(
-            24,                        // 字体高度
-            0,                         // 字体宽度
-            0,                         // 文本倾斜角度
-            0,                         // 字符基线倾斜角度
-            FW_NORMAL,                 // 字体粗细
-            FALSE,                     // 是否斜体
-            FALSE,                     // 是否下划线
-            FALSE,                     // 是否删除线
-            DEFAULT_CHARSET,           // 字符集
-            OUT_DEFAULT_PRECIS,        // 输出精度
-            CLIP_DEFAULT_PRECIS,       // 裁剪精度
-            CLEARTYPE_QUALITY,         // 输出质量 - 使用ClearType
-            DEFAULT_PITCH,             // 字符间距
-            L"微软雅黑"                // 字体名称
+            24, // 字体高度
+            0, // 字体宽度
+            0, // 文本倾斜角度
+            0, // 字符基线倾斜角度
+            FW_NORMAL, // 字体粗细
+            FALSE, // 是否斜体
+            FALSE, // 是否下划线
+            FALSE, // 是否删除线
+            DEFAULT_CHARSET, // 字符集
+            OUT_DEFAULT_PRECIS, // 输出精度
+            CLIP_DEFAULT_PRECIS, // 裁剪精度
+            CLEARTYPE_QUALITY, // 输出质量 - 使用ClearType
+            DEFAULT_PITCH, // 字符间距
+            L"微软雅黑" // 字体名称
         );
-        
+
         // 如果微软雅黑不可用，使用系统默认字体
         if (hFont == nullptr) {
             hFont = CreateFont(
@@ -312,41 +428,41 @@ LRESULT CALLBACK wnd_proc(const HWND hwnd, const UINT msg, const WPARAM w_param,
         RECT rect;
         HDC hdc = BeginPaint(hwnd, &ps);
         GetClientRect(hwnd, &rect);
-        
+
         // 选择自定义字体
         HFONT hOldFont = static_cast<HFONT>(SelectObject(hdc, hFont));
-        
+
         // 设置文本背景模式为透明
         SetBkMode(hdc, TRANSPARENT);
-        
+
         // 绘制文本
         DrawText(hdc, hint_text, -1, &rect, DT_LEFT | DT_TOP);
-        
+
         // 恢复旧字体
         SelectObject(hdc, hOldFont);
-        
+
         EndPaint(hwnd, &ps);
         return 0;
     }
-        
+
     case WM_CLOSE:
         DestroyWindow(hwnd);
         break;
-        
+
     case WM_DESTROY:
         // 删除字体资源
         if (hFont != nullptr) {
             DeleteObject(hFont);
             hFont = nullptr;
         }
-        
+
         if (keyboard_hook) {
             UnhookWindowsHookEx(keyboard_hook);
             keyboard_hook = nullptr;
         }
         PostQuitMessage(0);
         break;
-        
+
     default:
         return DefWindowProc(hwnd, msg, w_param, l_param);
     }
@@ -425,9 +541,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     // 5. 消息循环
-    while (GetMessage(&msg, nullptr, 0, 0) > 0) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+    // while (GetMessage(&msg, nullptr, 0, 0) > 0) {
+    //     TranslateMessage(&msg);
+    //     DispatchMessage(&msg);
+    // }
+
+    // 兼容消息循环和按键事件处理
+    while (true) {
+        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        else {
+            // 消息循环外处理按键事件，防止事件阻塞
+            keyboard_continue_proc();
+            Sleep(1); // 防止CPU占用过高
+        }
     }
 
     // 清理资源
