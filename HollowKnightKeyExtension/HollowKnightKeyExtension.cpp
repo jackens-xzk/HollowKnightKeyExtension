@@ -233,7 +233,7 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
 
         case VK_END:
         case VK_OEM_3:
-            // 物品栏按键抬起不需要特殊处理
+            keybd_event('I', 0, KEYEVENTF_KEYUP, 0);
             return 1;
         default: break;
         }
@@ -244,62 +244,109 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
 
 // 窗口过程处理
 LRESULT CALLBACK wnd_proc(const HWND hwnd, const UINT msg, const WPARAM w_param, const LPARAM l_param) {
-    HDC hdc;
-    PAINTSTRUCT ps;
-    RECT rect;
-    // 提示文本
+    // 创建自定义字体
+    static HFONT hFont = nullptr;
+    if (hFont == nullptr) {
+        hFont = CreateFont(
+            24,                        // 字体高度
+            0,                         // 字体宽度
+            0,                         // 文本倾斜角度
+            0,                         // 字符基线倾斜角度
+            FW_NORMAL,                 // 字体粗细
+            FALSE,                     // 是否斜体
+            FALSE,                     // 是否下划线
+            FALSE,                     // 是否删除线
+            DEFAULT_CHARSET,           // 字符集
+            OUT_DEFAULT_PRECIS,        // 输出精度
+            CLIP_DEFAULT_PRECIS,       // 裁剪精度
+            CLEARTYPE_QUALITY,         // 输出质量 - 使用ClearType
+            DEFAULT_PITCH,             // 字符间距
+            L"微软雅黑"                // 字体名称
+        );
+        
+        // 如果微软雅黑不可用，使用系统默认字体
+        if (hFont == nullptr) {
+            hFont = CreateFont(
+                16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                CLEARTYPE_QUALITY, DEFAULT_PITCH, nullptr
+            );
+        }
+    }
+
+    // 绘制提示文本
     static auto hint_text =
+        L"首次使用前请重置空洞骑士按键键位，此工具免费\n"
+        L"并将ASDF键对应的操作依次改到JKLU键上，即：\n"
+        L"聚集/施法改为J，超级冲刺改为K，梦之钉改为L，快速施法改为U\n"
         L"\n"
-        L"首次使用前请重置空洞骑士按键键位\n"
-        L"并将ASDF键对应的操作依次改到JKLU键上\n"
+        L"AD左右移动 W跳跃(你没看错) 空格键 聚集/施法\n"
+        L"横向移动添加覆盖功能,AD同时按住人物不会不动,会以后按的键的方向为准\n"
         L"\n"
-        L"AD左右移动\n"
-        L"W跳跃(你没看错)\n"
-        L"空格键 聚集/施法\n"
-        L"(以下数字均代指小键盘数字键,开启本程序时请确保小键盘灯常量(数字模式))\n"
-        L"4劈砍/剑技 7上劈 1下劈 0下劈\n"
+        L"(以下数字均代指小键盘数字键,开启本程序时最好确保小键盘灯常量(数字模式))\n"
+        L"4劈砍 7上劈 0下劈 (为此而生)\n"
         L"5快速施法/横波 8上吼 2下砸\n"
-        L"6冲刺 3下冲(需佩戴冲刺大师)\n"
-        L"+超冲 enter超冲\n"
+        L"以上劈砍和魔法均可自动连发（配合快劈，快冲效果更佳）\n"
+        L"按1蓄力剑技启动自动蓄力模式，按4普攻取消自动蓄力模式\n"
+        L"1为自动蓄力剑技，蓄力完成后按1、7、0可释放对应剑技，释放后无缝自动蓄力下一次\n"
+        L"6冲刺 3下冲(需佩戴冲刺大师) +超冲 enter超冲\n"
         L"\n"
-        L"9快速地图 *快速地图\n"
+        L"9快速地图\n"
         L"end(方向键上面)物品栏 `(Esc下面)物品栏\n"
-        L"PageDown梦之钉 NumLock梦之钉\n"
-        L"(梦之钉的传送与放置请自行配合方向键)\n"
-        L"(有椅子mod谁还用梦之钉传送)\n"
+        L"PageDown梦之钉\n"
+        L"(梦之钉的传送与放置请自行配合方向键，用↑↓←→而不是WASD)\n"
         L"\n"
         L"按住D连点Q 保持右移同时左劈\n"
         L"按住A连点E 保持左移同时右劈\n"
-        L"(回身劈功能不是很稳定,有概率砍错方向)\n"
+        L"右走时按Caps左冲，左走时按F右冲\n"
         L"\n"
-        L"与椅子/人物交互可用上劈\n"
-        L"交谈时W确认 4取消/跳过\n"
-        L"切换护符时用右手控制方向键,左手W键拆装护符\n"
+        L"与椅子/人物交互可用S或7\n"
+        L"交谈时，4下一句，W确认选择 \n"
+        L"切换护符时用右手控制方向键（用↑↓←→而不是WASD）,左手W键拆装护符\n"
         L"\n"
-        L"横向移动添加覆盖功能,AD同时按住人物不会不动,以后按的键的方向为准\n"
-        L"(BUG:上下劈按住会保持连劈,但快速点按会吞键,导致攻速下降,冲刺同理)\n"
-        L"\n"
-        L"\n"
-        L"                                                                                                 ------ made by jackens";
-
+        L"                                                                                             ------ made by jackens";
 
     switch (msg) {
-    case WM_PAINT:
-        hdc = BeginPaint(hwnd, &ps);
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        RECT rect;
+        HDC hdc = BeginPaint(hwnd, &ps);
         GetClientRect(hwnd, &rect);
-        DrawText(hdc, hint_text, -1, &rect, DT_LEFT | DT_TOP); // Unicode版本
+        
+        // 选择自定义字体
+        HFONT hOldFont = static_cast<HFONT>(SelectObject(hdc, hFont));
+        
+        // 设置文本背景模式为透明
+        SetBkMode(hdc, TRANSPARENT);
+        
+        // 绘制文本
+        DrawText(hdc, hint_text, -1, &rect, DT_LEFT | DT_TOP);
+        
+        // 恢复旧字体
+        SelectObject(hdc, hOldFont);
+        
         EndPaint(hwnd, &ps);
         return 0;
+    }
+        
     case WM_CLOSE:
         DestroyWindow(hwnd);
         break;
+        
     case WM_DESTROY:
+        // 删除字体资源
+        if (hFont != nullptr) {
+            DeleteObject(hFont);
+            hFont = nullptr;
+        }
+        
         if (keyboard_hook) {
             UnhookWindowsHookEx(keyboard_hook);
             keyboard_hook = nullptr;
         }
         PostQuitMessage(0);
         break;
+        
     default:
         return DefWindowProc(hwnd, msg, w_param, l_param);
     }
@@ -340,7 +387,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         sz_class_name, // 指向注册类名的指针
         L"空洞骑士按键扩展v0.1", // 指向窗口名称的指针
         WS_OVERLAPPEDWINDOW, // 窗口风格
-        CW_USEDEFAULT, CW_USEDEFAULT, 600, 600, // 窗口的 x,y 坐标以及宽高
+        CW_USEDEFAULT, CW_USEDEFAULT, 720, 740, // 窗口的 x,y 坐标以及宽高
         nullptr, // 父窗口的句柄
         nullptr, // 菜单的句柄
         hInstance, // 应用程序实例的句柄
