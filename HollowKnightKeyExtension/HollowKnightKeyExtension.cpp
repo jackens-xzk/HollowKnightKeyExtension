@@ -1,42 +1,53 @@
 ﻿#include <windows.h>
-#include <stdio.h>
+#include <cstdio>
 
-#define KeyDown(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 1 : 0)
-#define KeyUp(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 0 : 1)
+HWND hg_wnd;
+HHOOK keyboard_hook;
+WCHAR hollow_knight_text[256] = L"Hollow Knight";
+constexpr int delay_time = 15;
+bool hollow_knight_game_active = false;
+DWORD last_window_check = 0;
+constexpr DWORD window_check_interval = 100; // 100ms检查一次
 
-HWND hgWnd;
-HHOOK myhook;
-LPCWSTR infoText;
-WCHAR hollowText[256] = {0};
+// 更新当前窗口状态的函数
+void update_window_status() {
+    DWORD current_time = GetTickCount();
+    // 避免检查过于频繁
+    if (current_time - last_window_check > window_check_interval) {
+        HWND foreground_window = GetForegroundWindow();
+        if (foreground_window != nullptr) {
+            WCHAR window_text_buff[256] = {};
+            GetWindowText(foreground_window, window_text_buff, 255);
+            hollow_knight_game_active = wcscmp(window_text_buff, hollow_knight_text) == 0;
+        } else {
+            hollow_knight_game_active = false;
+        }
+        last_window_check = current_time;
+    }
+}
 
-const int delayTime = 15;
+LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPARAM l_param) {
+#pragma region 基本处理
 
-LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    // 只处理正常代码的按键事件
-    if (nCode < 0) {
-        return CallNextHookEx(myhook, nCode, wParam, lParam);
+    // 忽略系统消息等其他事件
+    if (n_code < 0) {
+        return CallNextHookEx(keyboard_hook, n_code, w_param, l_param);
     }
 
-#pragma region 判断程序是否为knight
-    // 判断程序是否为Hollow Knight
-    HWND hwnd = ::GetForegroundWindow();
-    if (hwnd == nullptr) {
-        return CallNextHookEx(myhook, nCode, wParam, lParam);
-    }
-
-    WCHAR windowTextBuff[256] = {0};
-    GetWindowText(hwnd, windowTextBuff, 255);
+    // 更新窗口状态（但不会太频繁）
+    update_window_status();
 
     // 比较窗口标题
-    if (wcscmp(windowTextBuff, hollowText) != 0) {
-        return CallNextHookEx(myhook, nCode, wParam, lParam);
+    if (!hollow_knight_game_active) {
+        return CallNextHookEx(keyboard_hook, n_code, w_param, l_param);
     }
 
 #pragma endregion
 
-    PKBDLLHOOKSTRUCT p = (PKBDLLHOOKSTRUCT)lParam;
+    // ReSharper disable once CppFunctionalStyleCast
+    const auto p = PKBDLLHOOKSTRUCT(l_param);   // NOLINT(performance-no-int-to-ptr)
 
-    if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
+    if (w_param == WM_KEYDOWN || w_param == WM_SYSKEYDOWN) {
         // 处理按键按下事件
         switch (p->vkCode) {
         case 'W': // Z 跳跃
@@ -114,7 +125,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
         case 'Q': // 向右移动时 向左回身斩
             keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_LEFT, 0, 0, 0);
-            Sleep(delayTime); 
+            Sleep(delay_time);
             keybd_event('X', 0, 0, 0);
             keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
@@ -123,7 +134,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
         case 'E': // 向左移动时 向右回身斩
             keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_RIGHT, 0, 0, 0);
-            Sleep(delayTime);
+            Sleep(delay_time);
             keybd_event('X', 0, 0, 0);
             keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
@@ -132,7 +143,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
         case VK_CAPITAL: // 向右移动时 向左回身冲刺 (Caps Lock)
             keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_LEFT, 0, 0, 0);
-            Sleep(delayTime);
+            Sleep(delay_time);
             keybd_event('C', 0, 0, 0);
             keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
@@ -141,14 +152,14 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
         case 'F': // 向左移动时 向右回身冲刺
             keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_RIGHT, 0, 0, 0);
-            Sleep(delayTime);
+            Sleep(delay_time);
             keybd_event('C', 0, 0, 0);
             keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
             return 1;
         }
     }
-    if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
+    if (w_param == WM_KEYUP || w_param == WM_SYSKEYUP) {
         // 处理按键抬起事件
         switch (p->vkCode) {
         case 'W':
@@ -225,7 +236,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
         }
     }
 
-    return CallNextHookEx(myhook, nCode, wParam, lParam);
+    return CallNextHookEx(keyboard_hook, n_code, w_param, l_param);
 }
 
 // 窗口过程处理
@@ -238,9 +249,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     RECT rect;
 
     static LPCWSTR infoText = nullptr;
-    
+
     if (infoText == nullptr) {
-        infoText = 
+        infoText =
             L"\n"
             L"游戏外使用请先关闭本程序,会对打字等功能产生影响\n"
             L"\n"
@@ -281,16 +292,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     case WM_PAINT:
         hdc = BeginPaint(hwnd, &ps);
         GetClientRect(hwnd, &rect);
-        DrawText(hdc, infoText, -1, &rect, DT_LEFT | DT_TOP);  // Unicode版本
+        DrawText(hdc, infoText, -1, &rect, DT_LEFT | DT_TOP); // Unicode版本
         EndPaint(hwnd, &ps);
         return 0;
     case WM_CLOSE:
         DestroyWindow(hwnd);
         break;
     case WM_DESTROY:
-        if (myhook) {
-            UnhookWindowsHookEx(myhook);
-            myhook = NULL;
+        if (keyboard_hook) {
+            UnhookWindowsHookEx(keyboard_hook);
+            keyboard_hook = NULL;
         }
         PostQuitMessage(0);
         break;
@@ -304,7 +315,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     WNDCLASSEX wc = {0};
     HWND hwnd;
     MSG Msg;
-    WCHAR text[256];  // 使用宽字符数组
+    WCHAR text[256]; // 使用宽字符数组
 
     const WCHAR szClassName[] = L"myWindowClass";
 
@@ -352,9 +363,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     UpdateWindow(hwnd);
 
     // 设置键盘全局监听
-    myhook = SetWindowsHookEx(
+    keyboard_hook = SetWindowsHookEx(
         WH_KEYBOARD_LL, // 监听类型【键盘】
-        KeyboardProc, // 处理函数
+        keyboard_proc, // 处理函数
         hInstance, // 当前实例句柄
         0 // 监听窗口句柄(NULL为全局监听)
     );
@@ -364,9 +375,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     //加快按键重复速度
     SystemParametersInfo(SPI_SETKEYBOARDSPEED, 31, 0, SPIF_SENDWININICHANGE);
 
-    wcscpy_s(hollowText, L"Hollow Knight");
-
-    if (myhook == NULL) {
+    if (keyboard_hook == NULL) {
         swprintf_s(text, L"键盘监听失败！error : %d \n", GetLastError());
         MessageBox(hwnd, text, L"错误", MB_OK);
         return 1;
@@ -379,9 +388,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     // 清理资源
-    if (myhook) {
-        UnhookWindowsHookEx(myhook);
+    if (keyboard_hook) {
+        UnhookWindowsHookEx(keyboard_hook);
     }
 
-    return (int)Msg.wParam;
+    return static_cast<int>(Msg.wParam);
 }
