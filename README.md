@@ -1,5 +1,5 @@
 # 空洞骑士按键扩展
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/jackens-xzk/HollowKnightKeyExtension)](https://github.com/jackens-xzk/HollowKnightKeyExtension名/releases/latest)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/jackens-xzk/HollowKnightKeyExtension)](https://github.com/jackens-xzk/HollowKnightKeyExtension/releases/latest)
 
 首次使用前请重置空洞骑士按键键位（此工具免费）
 并将ASDF键对应的操作依次改到JKLU键上，即：
