@@ -4,12 +4,27 @@
 HWND hg_wnd;
 HHOOK keyboard_hook;
 WCHAR hollow_knight_text[256] = L"Hollow Knight";
-constexpr int delay_time = 15;
+
+// 回身劈，回身冲刺的延迟，单位ms。 根据不同设备的反应速度，此值需要自行调整
+// 延迟过低会导致游戏读取不到回身指令导致无法回身，延迟过高会导致回身劈反应迟缓
+// 回身劈，回身冲只建议点按，长按会累积延迟导致松开后还会继续劈砍或冲刺一段时间
+constexpr int back_delay_time = 20;
+
+// 回血冲刺，在玩家回血时遇到紧急情况按下冲刺会自动停止回血然后冲刺
+// 因为回血中断后存在后摇，所以这个需要的延迟比较大
+constexpr int heal_delay_time = 250;
+
 bool hollow_knight_game_active = false;
 DWORD last_window_check = 0;
-constexpr DWORD window_check_interval = 200; // 前台窗口检测频率，单位ms，用于检查前台窗口是否为空洞骑士
+
+// 前台窗口检测间隔，单位ms，用于检查前台窗口是否为空洞骑士，可自行调整
+// 间隔过低会频繁检测前台窗口，造成部分性能占用，高配机可忽略
+// 间隔过高导致切出游戏后按键映射还继续存在，打字等操作可能会对其他软件造成干扰，如果你肯在切出后等待超过这个间隔时间再做其他事就不影响。
+constexpr DWORD window_check_interval = 200;
 
 bool charge_mode; // 蓄力模式
+bool moving_left; // 正在向左移动
+bool moving_right; // 正在向右移动
 
 //按键状态记录
 bool pad7;
@@ -20,6 +35,11 @@ bool pad5;
 bool pad2;
 bool pad6;
 bool pad3;
+
+bool a;
+bool d;
+
+bool space;
 
 // 前台窗口检测
 void foreground_window_check() {
@@ -44,6 +64,43 @@ void keyboard_continue_proc() {
     // 前台窗口检测
     foreground_window_check();
     if (!hollow_knight_game_active) return;
+
+    // 移动控制
+    // 左走
+    if (a && !d) {
+        moving_left = true;
+        moving_right = false;
+        keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
+        keybd_event(VK_LEFT, 0, 0, 0);
+    }
+    // 右走
+    if (!a && d) {
+        moving_right = true;
+        moving_left = false;
+        keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
+        keybd_event(VK_RIGHT, 0, 0, 0);
+    }
+    // ad都按下了，以后按下的方向为准
+    if (a && d) {
+        if (moving_left) {
+            keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event(VK_RIGHT, 0, 0, 0);
+        }
+        if (moving_right) {
+            keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event(VK_LEFT, 0, 0, 0);
+        }
+    }
+    // 不动，停止
+    if (!a && !d) {
+        // 仅做一次抬起处理，否则静止时干预正常的左右方向键←→功能
+        if (moving_left || moving_right) {
+            moving_left = false;
+            moving_right = false;
+            keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
+        }
+    }
 
     if (pad7) {
         // 上劈
@@ -76,6 +133,7 @@ void keyboard_continue_proc() {
 
 
     if (pad0) {
+        // 下劈
         if (charge_mode) {
             // 蓄力模式
             keybd_event(VK_DOWN, 0, 0, 0);
@@ -87,7 +145,7 @@ void keyboard_continue_proc() {
             // keybd_event('X', 0, KEYEVENTF_KEYUP, 0); // 取消松开保持连续蓄力
         }
         else {
-            // 下劈
+            // 普通模式
             keybd_event(VK_DOWN, 0, 0, 0);
             keybd_event('X', 0, 0, 0);
             Sleep(1); // 延时供游戏检测下劈状态
@@ -123,9 +181,19 @@ void keyboard_continue_proc() {
 
     if (pad6) {
         // 冲刺
-        keybd_event('C', 0, 0, 0);
-        Sleep(1);
-        keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
+        if (space) {
+            // 如果正在回血，则取消回血再冲刺
+            keybd_event('J', 0, KEYEVENTF_KEYUP, 0);
+            Sleep(heal_delay_time);
+            keybd_event('C', 0, 0, 0);
+            Sleep(1);
+            keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
+        }
+        else {
+            keybd_event('C', 0, 0, 0);
+            Sleep(1);
+            keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
+        }
     }
 
     if (pad3) {
@@ -139,7 +207,7 @@ void keyboard_continue_proc() {
 }
 
 
-// 键盘钩子函数 基本按键映射 仅处理瞬时、单次的按下、抬起事件
+// 键盘钩子函数 仅对 按下、持续按压、抬起 做基本的按键映射
 LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPARAM l_param) {
     // 忽略系统消息等其他事件
     if (n_code < 0) {
@@ -169,15 +237,16 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
             return 1;
 
         case 'A': // 左移动
-            keybd_event(VK_LEFT, 0, 0, 0);
+            a = true;
             return 1;
 
         case 'D': // 右移动
-            keybd_event(VK_RIGHT, 0, 0, 0);
+            d = true;
             return 1;
 
         case ' ': // 聚气回血、技能施法
             keybd_event('J', 0, 0, 0);
+            space = true;
             return 1;
 
         case VK_NUMPAD7: // 上劈
@@ -241,8 +310,9 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
         case 'Q': // 向右移动时 向左回身斩
             keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_LEFT, 0, 0, 0);
-            Sleep(delay_time);
+            Sleep(back_delay_time);
             keybd_event('X', 0, 0, 0);
+            Sleep(1); // 延迟1ms，确保能触发
             keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
             return 1;
@@ -250,8 +320,9 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
         case 'E': // 向左移动时 向右回身斩
             keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_RIGHT, 0, 0, 0);
-            Sleep(delay_time);
+            Sleep(back_delay_time);
             keybd_event('X', 0, 0, 0);
+            Sleep(1); // 延迟1ms，确保能触发
             keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
             return 1;
@@ -259,8 +330,9 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
         case VK_CAPITAL: // 向右移动时 向左回身冲刺 (Caps Lock)
             keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_LEFT, 0, 0, 0);
-            Sleep(delay_time);
+            Sleep(back_delay_time);
             keybd_event('C', 0, 0, 0);
+            Sleep(1); // 延迟1ms，确保能触发
             keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
             return 1;
@@ -268,8 +340,9 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
         case 'F': // 向左移动时 向右回身冲刺
             keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_RIGHT, 0, 0, 0);
-            Sleep(delay_time);
+            Sleep(back_delay_time);
             keybd_event('C', 0, 0, 0);
+            Sleep(1); // 延迟1ms，确保能触发
             keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
             return 1;
@@ -288,15 +361,16 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
             return 1;
 
         case 'A':
-            keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
+            a = false;
             return 1;
 
         case 'D':
-            keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
+            d = false;
             return 1;
 
         case ' ':
             keybd_event('J', 0, KEYEVENTF_KEYUP, 0);
+            space = false;
             return 1;
 
         case VK_NUMPAD7: // 上劈
@@ -405,16 +479,21 @@ LRESULT CALLBACK wnd_proc(const HWND hwnd, const UINT msg, const WPARAM w_param,
         L"以上劈砍和魔法均可自动连发（配合快劈，快冲效果更佳）\n"
         L"按1蓄力剑技启动自动蓄力模式，按4普攻取消自动蓄力模式\n"
         L"1为自动蓄力剑技，蓄力完成后按1、7、0可释放对应剑技，释放后无缝自动蓄力下一次\n"
-        L"6冲刺 3下冲(需佩戴冲刺大师) +超冲 enter超冲\n"
+        L"6冲刺 3下冲(需佩戴冲刺大师) +超冲 enter超冲 w中断超冲\n"
         L"\n"
         L"9快速地图\n"
         L"end(方向键上面)物品栏 `(Esc下面)物品栏\n"
         L"PageDown梦之钉\n"
         L"(梦之钉的传送与放置请自行配合方向键，用↑↓←→而不是WASD)\n"
+        L"向上看也需要按住方向键↑，向下看可以选择按住S\n"
         L"\n"
         L"按住D连点Q 保持右移同时左劈\n"
         L"按住A连点E 保持左移同时右劈\n"
         L"右走时按Caps左冲，左走时按F右冲\n"
+        L"回身劈，回身冲只建议点按，长按会累积延迟导致松开后还会继续劈砍或冲刺一段时间\n"
+        L"\n"
+        L"回血冲刺，如果正在按住空格回血时遇到紧急情况，按下了小键盘6冲刺\n"
+        L"会帮助中断回血并在中断回血的后摇结束后冲刺，因为中断回血存在后摇所以反应稍慢\n"
         L"\n"
         L"与椅子/人物交互可用S或7\n"
         L"交谈时，4下一句，W确认选择 \n"
@@ -503,7 +582,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         sz_class_name, // 指向注册类名的指针
         L"空洞骑士按键扩展v0.1", // 指向窗口名称的指针
         WS_OVERLAPPEDWINDOW, // 窗口风格
-        CW_USEDEFAULT, CW_USEDEFAULT, 720, 740, // 窗口的 x,y 坐标以及宽高
+        CW_USEDEFAULT, CW_USEDEFAULT, 720, 850, // 窗口的 x,y 坐标以及宽高
         nullptr, // 父窗口的句柄
         nullptr, // 菜单的句柄
         hInstance, // 应用程序实例的句柄
