@@ -1,0 +1,22 @@
+# Visual Studio
+.vs/
+*.user
+*.sdf
+*.opensdf
+*.suo
+
+# Build results
+Debug/
+Release/
+x64/
+
+# IDE specific files
+.idea/
+HollowKnightKeyExtension/.idea/
+
+# Compiled files
+*.exe
+*.dll
+*.obj
+*.lib
+*.pdb

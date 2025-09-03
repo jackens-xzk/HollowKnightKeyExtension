@@ -21,6 +21,7 @@ Global
 		{B4D40D0B-851D-472E-9BA4-197E05841504}.Release|x64.Build.0 = Release|x64
 		{B4D40D0B-851D-472E-9BA4-197E05841504}.Release|x86.ActiveCfg = Release|Win32
 		{B4D40D0B-851D-472E-9BA4-197E05841504}.Release|x86.Build.0 = Release|Win32
+		{B4D40D0B-851D-472E-9BA4-197E05841504}.Debug|x64.Deploy.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
