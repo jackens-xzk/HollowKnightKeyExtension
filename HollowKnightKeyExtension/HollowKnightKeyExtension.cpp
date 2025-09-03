@@ -5,6 +5,11 @@ HWND hg_wnd;
 HHOOK keyboard_hook;
 WCHAR hollow_knight_text[256] = L"Hollow Knight";
 
+// 微小延时，一般在劈砍发出和结束中间使用供游戏检测到劈砍，
+// 如果游戏中按键映射无法劈砍可尝试调大此值，一般不用调整
+// 算力低的设备可能需要调大此值
+constexpr int tiny_delay_time = 1;
+
 // 回身劈，回身冲刺的延迟，单位ms。 根据不同设备的反应速度，此值需要自行调整
 // 延迟过低会导致游戏读取不到回身指令导致无法回身，延迟过高会导致回身劈反应迟缓
 // 回身劈，回身冲只建议点按，长按会累积延迟导致松开后还会继续劈砍或冲刺一段时间
@@ -108,9 +113,9 @@ void keyboard_continue_proc() {
             //蓄力模式
             keybd_event(VK_UP, 0, 0, 0);
             keybd_event('X', 0, KEYEVENTF_KEYUP, 0); // 松开触发剑技
-            Sleep(1); // 延时供游戏检测松开剑技
+            Sleep(tiny_delay_time); // 延时供游戏检测松开剑技
             keybd_event('X', 0, 0, 0); // 不断连发延长旋风斩时间
-            Sleep(1); // 延时供游戏检测上劈状态
+            Sleep(tiny_delay_time); // 延时供游戏检测上劈状态
             keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
             // keybd_event('X', 0, KEYEVENTF_KEYUP, 0); // 取消松开保持连续蓄力
         }
@@ -118,7 +123,7 @@ void keyboard_continue_proc() {
             // 普通模式
             keybd_event(VK_UP, 0, 0, 0);
             keybd_event('X', 0, 0, 0);
-            Sleep(1); // 延时供游戏检测上劈状态
+            Sleep(tiny_delay_time); // 延时供游戏检测上劈状态
             keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
             keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
         }
@@ -127,7 +132,7 @@ void keyboard_continue_proc() {
     if (pad4) {
         // 横劈
         keybd_event('X', 0, 0, 0);
-        Sleep(1);
+        Sleep(tiny_delay_time);
         keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
     }
 
@@ -138,9 +143,9 @@ void keyboard_continue_proc() {
             // 蓄力模式
             keybd_event(VK_DOWN, 0, 0, 0);
             keybd_event('X', 0, KEYEVENTF_KEYUP, 0); // 松开触发剑技
-            Sleep(1); // 松开触发剑技（延时供游戏检测）
+            Sleep(tiny_delay_time); // 松开触发剑技（延时供游戏检测）
             keybd_event('X', 0, 0, 0); // 不断连发延长旋风斩时间
-            Sleep(1); // 延时供游戏检测下劈状态
+            Sleep(tiny_delay_time); // 延时供游戏检测下劈状态
             keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
             // keybd_event('X', 0, KEYEVENTF_KEYUP, 0); // 取消松开保持连续蓄力
         }
@@ -148,7 +153,7 @@ void keyboard_continue_proc() {
             // 普通模式
             keybd_event(VK_DOWN, 0, 0, 0);
             keybd_event('X', 0, 0, 0);
-            Sleep(1); // 延时供游戏检测下劈状态
+            Sleep(tiny_delay_time); // 延时供游戏检测下劈状态
             keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
             keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
         }
@@ -158,7 +163,7 @@ void keyboard_continue_proc() {
         // 上吼
         keybd_event(VK_UP, 0, 0, 0);
         keybd_event('U', 0, 0, 0);
-        Sleep(1);
+        Sleep(tiny_delay_time);
         keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
         keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
     }
@@ -166,7 +171,7 @@ void keyboard_continue_proc() {
     if (pad5) {
         // 横波
         keybd_event('U', 0, 0, 0);
-        Sleep(1);
+        Sleep(tiny_delay_time);
         keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
     }
 
@@ -174,7 +179,7 @@ void keyboard_continue_proc() {
         // 下砸
         keybd_event(VK_DOWN, 0, 0, 0);
         keybd_event('U', 0, 0, 0);
-        Sleep(1);
+        Sleep(tiny_delay_time);
         keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
         keybd_event('U', 0, KEYEVENTF_KEYUP, 0);
     }
@@ -186,12 +191,12 @@ void keyboard_continue_proc() {
             keybd_event('J', 0, KEYEVENTF_KEYUP, 0);
             Sleep(heal_delay_time);
             keybd_event('C', 0, 0, 0);
-            Sleep(1);
+            Sleep(tiny_delay_time);
             keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
         }
         else {
             keybd_event('C', 0, 0, 0);
-            Sleep(1);
+            Sleep(tiny_delay_time);
             keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
         }
     }
@@ -200,7 +205,7 @@ void keyboard_continue_proc() {
         // 下冲
         keybd_event(VK_DOWN, 0, 0, 0);
         keybd_event('C', 0, 0, 0);
-        Sleep(1);
+        Sleep(tiny_delay_time);
         keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
         keybd_event(VK_DOWN, 0, KEYEVENTF_KEYUP, 0);
     }
@@ -260,7 +265,7 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
 
         case VK_NUMPAD1: // 剑技蓄力
             keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
-            Sleep(1);
+            Sleep(tiny_delay_time);
             keybd_event('X', 0, 0, 0);
             charge_mode = true;
             return 1;
@@ -312,7 +317,7 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
             keybd_event(VK_LEFT, 0, 0, 0);
             Sleep(back_delay_time);
             keybd_event('X', 0, 0, 0);
-            Sleep(1); // 延迟1ms，确保能触发
+            Sleep(tiny_delay_time); // 延迟1ms，确保能触发
             keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
             return 1;
@@ -322,7 +327,7 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
             keybd_event(VK_RIGHT, 0, 0, 0);
             Sleep(back_delay_time);
             keybd_event('X', 0, 0, 0);
-            Sleep(1); // 延迟1ms，确保能触发
+            Sleep(tiny_delay_time); // 延迟1ms，确保能触发
             keybd_event('X', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
             return 1;
@@ -332,7 +337,7 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
             keybd_event(VK_LEFT, 0, 0, 0);
             Sleep(back_delay_time);
             keybd_event('C', 0, 0, 0);
-            Sleep(1); // 延迟1ms，确保能触发
+            Sleep(tiny_delay_time); // 延迟1ms，确保能触发
             keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_LEFT, 0, KEYEVENTF_KEYUP, 0);
             return 1;
@@ -342,7 +347,7 @@ LRESULT CALLBACK keyboard_proc(const int n_code, const WPARAM w_param, const LPA
             keybd_event(VK_RIGHT, 0, 0, 0);
             Sleep(back_delay_time);
             keybd_event('C', 0, 0, 0);
-            Sleep(1); // 延迟1ms，确保能触发
+            Sleep(tiny_delay_time); // 延迟1ms，确保能触发
             keybd_event('C', 0, KEYEVENTF_KEYUP, 0);
             keybd_event(VK_RIGHT, 0, KEYEVENTF_KEYUP, 0);
             return 1;
@@ -582,7 +587,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         sz_class_name, // 指向注册类名的指针
         L"空洞骑士按键扩展v0.1", // 指向窗口名称的指针
         WS_OVERLAPPEDWINDOW, // 窗口风格
-        CW_USEDEFAULT, CW_USEDEFAULT, 720, 850, // 窗口的 x,y 坐标以及宽高
+        CW_USEDEFAULT, CW_USEDEFAULT, 720, 860, // 窗口的 x,y 坐标以及宽高
         nullptr, // 父窗口的句柄
         nullptr, // 菜单的句柄
         hInstance, // 应用程序实例的句柄
@@ -628,13 +633,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // 兼容消息循环和按键事件处理
     while (true) {
         if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_QUIT) break;
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
         else {
             // 消息循环外处理按键事件，防止事件阻塞
             keyboard_continue_proc();
-            Sleep(1); // 防止CPU占用过高
+            Sleep(tiny_delay_time); // 防止CPU占用过高
         }
     }
 
