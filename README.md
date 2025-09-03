@@ -1,4 +1,5 @@
 # 空洞骑士按键扩展
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/jackens-xzk/HollowKnightKeyExtension)](https://github.com/jackens-xzk/HollowKnightKeyExtension名/releases/latest)
 
 首次使用前请重置空洞骑士按键键位（此工具免费）
 并将ASDF键对应的操作依次改到JKLU键上，即：
@@ -32,6 +33,8 @@ PageDown梦之钉
 与椅子/人物交互可用S或7
 交谈时，4下一句，W确认选择 
 切换护符时用右手控制方向键（用↑↓←→而不是WASD）,左手W键拆装护符
+
+[📥 点击下载最新版本](https://github.com/jackens-xzk/HollowKnightKeyExtension/releases/latest)
 
 本人精力和经验有限，难有时间处理项目中的问题，如有修改需求，可自行fork或另起项目
 可做其他游戏制作按键辅助的参考
