@@ -1,6 +1,8 @@
 ﻿#include <windows.h>
 #include <cstdio>
 
+#include "Resource.h"
+
 HWND hg_wnd;
 HHOOK keyboard_hook;
 WCHAR hollow_knight_text[256] = L"Hollow Knight";
@@ -471,7 +473,7 @@ LRESULT CALLBACK wnd_proc(const HWND hwnd, const UINT msg, const WPARAM w_param,
 
     // 绘制提示文本
     static auto hint_text =
-        L"首次使用前请重置空洞骑士按键键位，此工具免费\n"
+        L"首次使用前请重置空洞骑士按键键位（此工具免费）\n"
         L"并将ASDF键对应的操作依次改到JKLU键上，即：\n"
         L"聚集/施法改为J，超级冲刺改为K，梦之钉改为L，快速施法改为U\n"
         L"\n"
@@ -490,7 +492,7 @@ LRESULT CALLBACK wnd_proc(const HWND hwnd, const UINT msg, const WPARAM w_param,
         L"end(方向键上面)物品栏 `(Esc下面)物品栏\n"
         L"PageDown梦之钉\n"
         L"(梦之钉的传送与放置请自行配合方向键，用↑↓←→而不是WASD)\n"
-        L"向上看也需要按住方向键↑，向下看可以选择按住S\n"
+        L"向上向下看也需要按住方向键↑↓，向下看还可以选择按住S\n"
         L"\n"
         L"按住D连点Q 保持右移同时左劈\n"
         L"按住A连点E 保持左移同时右劈\n"
@@ -567,13 +569,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wc.cbClsExtra = 0; // 指定紧跟在窗口类结构后的附加字节数
     wc.cbWndExtra = 0; // 指定紧跟在窗口事例后的附加字节数
     wc.hInstance = hInstance; // 本模块的实例句柄
-    wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION); // 图标的句柄
+    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_HOLLOWKNIGHTKEYEXTENSION)); // 图标的句柄
     wc.hCursor = LoadCursor(nullptr, IDC_ARROW); // 光标的句柄
     // ReSharper disable once CppFunctionalStyleCast
     wc.hbrBackground = HBRUSH(COLOR_WINDOW + 1); // 背景画刷的句柄  // NOLINT(performance-no-int-to-ptr)
     wc.lpszMenuName = nullptr; // 指向菜单的指针
     wc.lpszClassName = sz_class_name; // 指向类名称的指针
-    wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION); // 和窗口类关联的小图标
+    wc.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SMALL)); // 和窗口类关联的小图标
 
     // 2. 使用【窗口结构体】注册窗口
     if (!RegisterClassEx(&wc)) {
@@ -585,9 +587,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     const HWND hwnd = CreateWindowEx(
         WS_EX_CLIENTEDGE, // 窗口的扩展风格
         sz_class_name, // 指向注册类名的指针
-        L"空洞骑士按键扩展v0.1", // 指向窗口名称的指针
+        L"空洞骑士按键扩展v1.0", // 指向窗口名称的指针
         WS_OVERLAPPEDWINDOW, // 窗口风格
-        CW_USEDEFAULT, CW_USEDEFAULT, 720, 860, // 窗口的 x,y 坐标以及宽高
+        CW_USEDEFAULT, CW_USEDEFAULT, 720, 870, // 窗口的 x,y 坐标以及宽高
         nullptr, // 父窗口的句柄
         nullptr, // 菜单的句柄
         hInstance, // 应用程序实例的句柄
